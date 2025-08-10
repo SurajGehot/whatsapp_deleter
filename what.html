@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WhatsApp Message Cleaner</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#0b1220; --accent:#10b981; --muted:#94a3b8; --warning:#f59e0b; --danger:#ef4444;
+  }
+  body{
+    margin:0; font-family:Inter, Roboto, Arial, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% 10%, rgba(16,185,129,0.06), transparent 8%),
+      radial-gradient(1000px 500px at 90% 90%, rgba(99,102,241,0.04), transparent 8%),
+      var(--bg);
+    color:#e6eef8; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:16px; text-align:center;
+  }
+  .card{
+    width:100%; max-width:760px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.03); border-radius:14px; padding:24px; box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  }
+  .starter-message {
+    max-width: 500px; margin: 0 auto; padding: 20px;
+    display: none; /* Hidden by default, shown only if no URL parameter */
+  }
+  .starter-message h1 {
+    color: var(--accent); margin-bottom: 10px;
+  }
+  .starter-message p {
+    color: var(--muted); margin-bottom: 20px; line-height:1.5;
+  }
+  .download-link {
+    background: var(--accent); color: #021018; padding: 12px 24px;
+    border-radius: 6px; cursor: pointer; font-weight: bold; 
+    display: inline-block; margin: 10px 0; text-decoration: none;
+    transition: all 0.3s;
+  }
+  .download-link:hover {
+    background: #0d9e6f; transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+  }
+  header{display:flex;gap:12px;align-items:center;margin-bottom:18px;}
+  .logo{
+    width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6366f1);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#021018;
+  }
+  h1{font-size:20px;margin:0; text-align:left;}
+  .file-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;}
+  .file-info{display:flex;gap:12px;align-items:center}
+  .file-icon{width:56px;height:56px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;font-weight:700}
+  .file-meta{line-height:1; text-align:left;}
+  .file-meta .name{font-weight:700}
+  .progress-wrap{background:rgba(255,255,255,0.02);padding:14px;border-radius:12px; margin-bottom: 16px;}
+  .bar{
+    height:16px;background:rgba(255,255,255,0.04);border-radius:10px;overflow:hidden;position:relative;
+  }
+  .bar-inner{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#60a5fa);transition:width 0.2s linear;}
+  .bar-label{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
+  .small{font-size:12px;color:var(--muted)}
+  .alert-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 16px;
+    display: none;
+    gap: 10px;
+    align-items: center;
+  }
+  .alert-icon {
+    color: var(--danger);
+    font-weight: bold;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .alert-text {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .terminal {
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    text-align: left;
+  }
+  .terminal-line {
+    margin: 0;
+    color: #84cc16;
+  }
+  .terminal-line.system {
+    color: #60a5fa;
+  }
+  .terminal-line.warning {
+    color: #f59e0b;
+  }
+  .terminal-line.error {
+    color: #ef4444;
+  }
+  .btn {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 16px;
+    transition: all 0.2s;
+  }
+  .btn:hover {
+    background: rgba(239, 68, 68, 0.3);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .security-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-content {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 24px;
+    max-width: 500px;
+    width: 90%;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+  }
+  .modal-header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .modal-icon {
+    color: var(--danger);
+    font-size: 24px;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+  }
+  .modal-message {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .modal-btn {
+    background: rgba(239, 68, 68, 0.3);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+  .modal-btn:hover {
+    background: rgba(239, 68, 68, 0.4);
+  }
+  @media (max-width: 600px) {
+    .card { padding: 16px; }
+    .file-icon { width: 48px; height: 48px; }
+    .logo { width: 48px; height: 48px; font-size: 18px; }
+    h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+  <!-- SECURITY NOTE: This is a completely harmless simulation -->
+  <div class="starter-message" id="starterMessage">
+    <h1>WhatsApp Message Cleaner</h1>
+    <p>Permanently delete WhatsApp messages and media from any device. Our advanced tool can erase all traces of conversations, even after backups.</p>
+    <p>Works on all devices (Android, iPhone, Windows, Mac)</p>
+    <a href="?start=1" class="download-link">DON'T MESS WITH ME</a>
+    <p class="small">This will begin the secure erasure protocol</p>
+  </div>
+
+  <div class="card" id="mainCard" role="region" aria-label="WhatsApp cleaning process">
+    <header>
+      <div class="logo">WA</div>
+      <div>
+        <h1>WhatsApp Data Erasure</h1>
+      </div>
+    </header>
+
+    <div class="file-row">
+      <div class="file-info">
+        <div class="file-icon">DEL</div>
+        <div class="file-meta">
+          <div class="name" id="fileName">MessageCleaner</div>
+          <div class="small">Processing package...</div>
+        </div>
+      </div>
+      <div class="small" id="statusTag">Initializing...</div>
+    </div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="bar" aria-hidden="true">
+        <div class="bar-inner" id="barInner"></div>
+      </div>
+      <div class="bar-label">
+        <div id="progressText">0%</div>
+        <div id="speedText">— KB/s</div>
+      </div>
+    </div>
+
+    <div class="terminal" id="terminal">
+      <p class="terminal-line system">> WhatsApp Data Erasure Tool v3.2.1</p>
+      <p class="terminal-line error">> WARNING: This will PERMANENTLY delete data</p>
+    </div>
+
+    <div class="alert-banner" id="securityAlert">
+      <div class="alert-icon">!</div>
+      <div class="alert-text">
+        <strong>Security Alert:</strong> Process cannot be interrupted. Your messages are being erased.
+      </div>
+    </div>
+
+    <button class="btn" id="cancelBtn">STOP ERASURE</button>
+  </div>
+
+  <div class="security-modal" id="securityModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-icon">⚠</div>
+        <div class="modal-title">ERASURE IN PROGRESS</div>
+      </div>
+      <div class="modal-message">
+        The WhatsApp data erasure process cannot be stopped now. Interrupting may leave your device in an unstable state and corrupt remaining data.<br><br>
+        Estimated time remaining: 3-5 minutes<br><br>
+        <strong>Messages deleted so far: 428</strong>
+      </div>
+      <button class="modal-btn" id="modalOkBtn">CONTINUE ERASURE</button>
+    </div>
+  </div>
+
+<script>
+  const starterMessage = document.getElementById('starterMessage');
+  const mainCard = document.getElementById('mainCard');
+  const bar = document.getElementById('barInner');
+  const progressText = document.getElementById('progressText');
+  const speedText = document.getElementById('speedText');
+  const statusTag = document.getElementById('statusTag');
+  const terminal = document.getElementById('terminal');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const securityAlert = document.getElementById('securityAlert');
+  const securityModal = document.getElementById('securityModal');
+  const modalOkBtn = document.getElementById('modalOkBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  
+  let progress = 0;
+  let speed = 0;
+  let interval = null;
+  let cancelAttempted = false;
+  let messagesDeleted = 0;
+
+  // Check if URL has ?start=1 parameter (direct link)
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoStart = urlParams.has('start');
+
+  function addTerminalLine(text, className = "") {
+    const line = document.createElement('p');
+    line.className = `terminal-line ${className}`;
+    line.textContent = text;
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  function updateUI() {
+    bar.style.width = progress + '%';
+    progressText.textContent = Math.floor(progress) + '%';
+    speedText.textContent = progress >= 100 ? '— KB/s' : Math.round(speed) + ' KB/s';
+    
+    if (progress >= 100) {
+      statusTag.textContent = 'Erasing messages...';
+      statusTag.style.color = 'var(--danger)';
+    } else if (progress > 70) {
+      statusTag.textContent = 'Finalizing...';
+      statusTag.style.color = 'var(--warning)';
+    } else if (progress > 0) {
+      statusTag.textContent = 'Preparing erasure...';
+      statusTag.style.color = 'var(--muted)';
+    }
+  }
+
+  function simulateTerminal() {
+    let delay = 1000;
+    const terminalMessages = [
+      {text: "> Bypassing WhatsApp security...", class: "warning"},
+      {text: "> Accessing message database...", class: "system"},
+      {text: "> Found 1,248 messages to delete", class: "system"},
+      {text: "> Deleting media files...", class: ""},
+      {text: "> Overwriting backup files...", class: "system"},
+      {text: "> ERROR: Failed to delete 3 encrypted messages", class: "error"},
+      {text: "> Disabling WhatsApp notifications...", class: "system"},
+      {text: "> Cleaning temporary files...", class: ""},
+    ];
+
+    terminalMessages.forEach((msg, index) => {
+      setTimeout(() => {
+        addTerminalLine(msg.text, msg.class);
+        // Update counter for deleted messages
+        if (msg.text.includes("deleting") || msg.text.includes("Deleting")) {
+          messagesDeleted += Math.floor(Math.random() * 50) + 20;
+          document.querySelector('.modal-message strong').textContent = 
+            `Messages deleted so far: ${messagesDeleted}`;
+        }
+      }, delay);
+      delay += 1500 + Math.random() * 2000;
+    });
+  }
+
+  function showSecurityAlert() {
+    securityAlert.style.display = 'flex';
+    setTimeout(() => {
+      securityAlert.style.display = 'none';
+    }, 5000);
+  }
+
+  function showSecurityModal() {
+    securityModal.style.display = 'flex';
+  }
+
+  function startSim() {
+    starterMessage.style.display = 'none';
+    mainCard.style.display = 'block';
+    
+    // Initial terminal messages
+    setTimeout(() => {
+      addTerminalLine("> Downloading erasure components...", "system");
+      addTerminalLine("> WARNING: This action cannot be undone", "error");
+    }, 500);
+    
+    // Start progress simulation
+    interval = setInterval(() => {
+      speed = 50 + Math.random() * 850;
+      let step = (speed / 800) * (0.5 + Math.random()*1.6);
+      progress = Math.min(100, progress + step);
+      
+      // Add terminal messages during download
+      if (progress > 30 && progress < 35 && !document.querySelector('.terminal-line:contains("Verifying")')) {
+        addTerminalLine("> Verifying device access...", "");
+      }
+      if (progress > 60 && progress < 65 && !document.querySelector('.terminal-line:contains("Preparing")')) {
+        addTerminalLine("> Preparing secure erasure...", "system");
+      }
+      
+      updateUI();
+      if (progress >= 100) {
+        clearInterval(interval);
+        simulateTerminal();
+        setTimeout(() => {
+          statusTag.textContent = 'Erasure complete';
+          cancelBtn.disabled = true;
+          cancelBtn.textContent = 'PROCESS COMPLETED';
+        }, 1000);
+      }
+    }, 300);
+    updateUI();
+  }
+
+  cancelBtn.addEventListener('click', () => {
+    if (!cancelAttempted) {
+      cancelAttempted = true;
+      showSecurityAlert();
+      setTimeout(showSecurityModal, 800);
+      addTerminalLine("> User attempted to stop erasure", "warning");
+      addTerminalLine("> CRITICAL: Process cannot be interrupted", "error");
+      addTerminalLine("> Continuing deletion sequence...", "system");
+    }
+  });
+
+  modalOkBtn.addEventListener('click', () => {
+    securityModal.style.display = 'none';
+  });
+
+  // Auto-start if URL has ?start=1 parameter
+  if (autoStart) {
+    startSim();
+  } else {
+    starterMessage.style.display = 'block';
+    mainCard.style.display = 'none';
+  }
+</script>
+</body>
+</html>
