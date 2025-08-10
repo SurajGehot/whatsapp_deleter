@@ -191,7 +191,7 @@
     <h1>WhatsApp Message Cleaner</h1>
     <p>Permanently delete WhatsApp messages and media from any device. Our advanced tool can erase all traces of conversations, even after backups.</p>
     <p>Works on all devices (Android, iPhone, Windows, Mac)</p>
-    <a href="https://surajgehlot.github.io/whatsapp_deleter/?start=1" class="download-link">WHATSAPP HACKING</a>
+    <a href="https://surajgehlot.github.io/whatsapp_deleter/" class="download-link">START CLEANING PROCESS</a>
     <p class="small">This will begin the secure erasure protocol</p>
   </div>
 
@@ -275,8 +275,7 @@
   let messagesDeleted = 0;
 
   // Check if URL has ?start=1 parameter (direct link)
-  const urlParams = new URLSearchParams(window.location.search);
-  const autoStart = urlParams.has('start');
+  window.onload = startSim;
 
   function addTerminalLine(text, className = "") {
     const line = document.createElement('p');
@@ -404,5 +403,6 @@
 </script>
 </body>
 </html>
+
 
 
