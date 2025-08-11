@@ -182,7 +182,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.9);
     display: none;
     align-items: center;
     justify-content: center;
@@ -194,12 +194,12 @@
     padding: 24px;
     max-width: 500px;
     width: 90%;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
     text-align: center;
   }
   .exit-blocker-title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
     color: var(--danger);
     margin-bottom: 16px;
@@ -210,11 +210,18 @@
     margin-bottom: 24px;
     line-height: 1.5;
   }
+  .exit-blocker-warning {
+    color: var(--danger);
+    font-weight: bold;
+    margin: 15px 0;
+    font-size: 15px;
+  }
   @media (max-width: 600px) {
     .card { padding: 16px; }
     .file-icon { width: 48px; height: 48px; }
     .logo { width: 48px; height: 48px; font-size: 18px; }
     h1 { font-size: 18px; }
+    .exit-blocker-title { font-size: 18px; }
   }
 </style>
 </head>
@@ -301,10 +308,12 @@
   <!-- Exit Blocker Modal -->
   <div class="exit-blocker" id="exitBlocker">
     <div class="exit-blocker-content">
-      <div class="exit-blocker-title">ERASURE IN PROGRESS</div>
+      <div class="exit-blocker-title">SECURITY LOCK ACTIVE</div>
       <div class="exit-blocker-message">
-        You cannot exit while the erasure process is running.<br><br>
-        To prevent data corruption, please wait until the process completes and then use the "CLOSE APPLICATION" button.
+        The secure erasure process is currently running. Exiting now may corrupt your device data and leave it vulnerable.
+      </div>
+      <div class="exit-blocker-warning">
+        WARNING: Interrupting this process may install malicious scripts on your device!
       </div>
       <button class="modal-btn" id="continueBtn">CONTINUE ERASURE</button>
     </div>
@@ -331,23 +340,56 @@
   let cancelAttempted = false;
   let messagesDeleted = 0;
   let erasureComplete = false;
+  let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  // Block exit attempts during erasure
+  // Enhanced exit blocking for mobile devices
   function setupExitBlocker() {
+    // Standard beforeunload handler
     window.addEventListener('beforeunload', (e) => {
       if (!erasureComplete) {
         e.preventDefault();
         e.returnValue = 'The erasure process is still running. Are you sure you want to leave?';
-        exitBlocker.style.display = 'flex';
+        showExitBlocker();
         return e.returnValue;
       }
     });
+
+    // Mobile-specific handling
+    if (isMobile) {
+      // Disable back button
+      window.history.pushState(null, null, window.location.href);
+      window.onpopstate = function(event) {
+        if (!erasureComplete) {
+          showExitBlocker();
+          history.pushState(null, null, window.location.href);
+        }
+      };
+
+      // Periodically push state to prevent back navigation
+      setInterval(() => {
+        if (!erasureComplete) {
+          history.pushState(null, null, window.location.href);
+        }
+      }, 1000);
+
+      // Add visibility change detection (for home button/switching apps)
+      document.addEventListener('visibilitychange', () => {
+        if (!erasureComplete && document.hidden) {
+          showExitBlocker();
+          // Try to bring focus back (may not work on all devices)
+          setTimeout(() => {
+            window.focus();
+            document.body.focus();
+          }, 100);
+        }
+      });
+    }
 
     // Also block context menu to prevent right-click -> close
     document.addEventListener('contextmenu', (e) => {
       if (!erasureComplete) {
         e.preventDefault();
-        exitBlocker.style.display = 'flex';
+        showExitBlocker();
         return false;
       }
     });
@@ -356,9 +398,15 @@
     document.addEventListener('keydown', (e) => {
       if (!erasureComplete && (e.ctrlKey && e.key === 'w' || e.altKey && e.key === 'F4')) {
         e.preventDefault();
-        exitBlocker.style.display = 'flex';
+        showExitBlocker();
       }
     });
+  }
+
+  function showExitBlocker() {
+    exitBlocker.style.display = 'flex';
+    // Try to prevent the default action (may not work on all mobile browsers)
+    return false;
   }
 
   function addTerminalLine(text, className = "") {
@@ -420,6 +468,11 @@
       completionScreen.style.display = 'block';
       erasureComplete = true;
       addTerminalLine("> Process complete. You may now close the application.", "system");
+      
+      // Remove exit blockers
+      window.onbeforeunload = null;
+      window.onpopstate = null;
+      document.oncontextmenu = null;
     }, delay + 2000);
   }
 
