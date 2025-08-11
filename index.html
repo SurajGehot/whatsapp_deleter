@@ -261,7 +261,7 @@
       <p class="terminal-line">> Cleaning forensic traces...</p>
       <p class="terminal-line error">> WARNING: Recovery impossible</p>
     </div>
-    <button class="btn" id="restartBtn" style="margin-top:20px;">CLOSE APPLICATION</button>
+    <button class="btn" id="closeBtn" style="margin-top:20px;">CLOSE APPLICATION</button>
   </div>
 
 <script>
@@ -275,7 +275,7 @@
   const securityModal = document.getElementById('securityModal');
   const modalOkBtn = document.getElementById('modalOkBtn');
   const completionScreen = document.getElementById('completionScreen');
-  const restartBtn = document.getElementById('restartBtn');
+  const closeBtn = document.getElementById('closeBtn');
   
   let progress = 0;
   let speed = 0;
@@ -396,9 +396,9 @@
     securityModal.style.display = 'none';
   });
 
-  restartBtn.addEventListener('click', () => {
-    // Refresh the page to "restart" the simulation
-    location.reload();
+  closeBtn.addEventListener('click', () => {
+    // Close the tab/window instead of refreshing
+    window.close();
   });
 
   // Auto-start immediately when page loads
