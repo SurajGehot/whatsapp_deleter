@@ -1,838 +1,689 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>WhatsApp Message Cleaner</title>
-<style>
-  :root{
-    --bg:#0f1724; --card:#0b1220; --accent:#10b981; --muted:#94a3b8; --warning:#f59e0b; --danger:#ef4444;
-  }
-  body{
-    margin:0; font-family:Inter, Roboto, Arial, sans-serif;
-    background:
-      radial-gradient(1200px 600px at 10% 10%, rgba(16,185,129,0.06), transparent 8%),
-      radial-gradient(1000px 500px at 90% 90%, rgba(99,102,241,0.04), transparent 8%),
-      var(--bg);
-    color:#e6eef8; min-height:100vh; display:flex; align-items:center; justify-content:center;
-    padding:16px;
-  }
-  .card{
-    width:100%; max-width:760px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-    border:1px solid rgba(255,255,255,0.03); border-radius:14px; padding:24px; box-shadow: 0 10px 30px rgba(2,6,23,0.6);
-  }
-  header{display:flex;gap:12px;align-items:center;margin-bottom:18px;}
-  .logo{
-    width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6366f1);
-    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#021018;
-  }
-  h1{font-size:20px;margin:0; text-align:left;}
-  .file-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px;}
-  .file-info{display:flex;gap:12px;align-items:center}
-  .file-icon{width:56px;height:56px;border-radius:8px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;font-weight:700}
-  .file-meta{line-height:1; text-align:left;}
-  .file-meta .name{font-weight:700}
-  .progress-wrap{background:rgba(255,255,255,0.02);padding:14px;border-radius:12px; margin-bottom: 16px;}
-  .bar{
-    height:16px;background:rgba(255,255,255,0.04);border-radius:10px;overflow:hidden;position:relative;
-  }
-  .bar-inner{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#60a5fa);transition:width 0.2s linear;}
-  .bar-label{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
-  .small{font-size:12px;color:var(--muted)}
-  .alert-banner {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    padding: 12px;
-    border-radius: 8px;
-    margin-top: 16px;
-    display: none;
-    gap: 10px;
-    align-items: center;
-  }
-  .alert-icon {
-    color: var(--danger);
-    font-weight: bold;
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-  .alert-text {
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .terminal {
-    background: rgba(0,0,0,0.3);
-    border-radius: 6px;
-    padding: 12px;
-    font-family: monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    margin-top: 16px;
-    max-height: 200px;
-    overflow-y: auto;
-    text-align: left;
-  }
-  .terminal-line {
-    margin: 0;
-    color: #84cc16;
-  }
-  .terminal-line.system {
-    color: #60a5fa;
-  }
-  .terminal-line.warning {
-    color: #f59e0b;
-  }
-  .terminal-line.error {
-    color: #ef4444;
-  }
-  .btn {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    margin-top: 16px;
-    transition: all 0.2s;
-  }
-  .btn:hover {
-    background: rgba(239, 68, 68, 0.3);
-  }
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .security-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.8);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  .modal-content {
-    background: var(--card);
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 500px;
-    width: 90%;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.2);
-  }
-  .modal-header {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  .modal-icon {
-    color: var(--danger);
-    font-size: 24px;
-  }
-  .modal-title {
-    font-size: 18px;
-    font-weight: bold;
-    color: #fff;
-  }
-  .modal-message {
-    font-size: 14px;
-    color: var(--muted);
-    margin-bottom: 24px;
-    line-height: 1.5;
-  }
-  .modal-btn {
-    background: rgba(239, 68, 68, 0.3);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-  }
-  .modal-btn:hover {
-    background: rgba(239, 68, 68, 0.4);
-  }
-  .completion-screen {
-    display: none;
-    text-align: center;
-    padding: 20px;
-  }
-  .completion-icon {
-    font-size: 72px;
-    color: var(--danger);
-    margin-bottom: 20px;
-  }
-  .completion-message {
-    font-size: 18px;
-    margin-bottom: 10px;
-  }
-  .completion-details {
-    font-size: 14px;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-  
-  .exit-blocker {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.95);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px);
-  }
-  .exit-blocker-content {
-    background: var(--card);
-    border-radius: 12px;
-    padding: 24px;
-    max-width: 500px;
-    width: 90%;
-    border: 1px solid rgba(239, 68, 68, 0.7);
-    box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
-    text-align: center;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); }
-    50% { box-shadow: 0 0 50px rgba(239, 68, 68, 0.8); }
-    100% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); }
-  }
-  .exit-blocker-title {
-    font-size: 22px;
-    font-weight: bold;
-    color: var(--danger);
-    margin-bottom: 16px;
-    text-transform: uppercase;
-  }
-  .exit-blocker-message {
-    font-size: 15px;
-    color: var(--muted);
-    margin-bottom: 24px;
-    line-height: 1.6;
-  }
-  .exit-blocker-warning {
-    color: var(--danger);
-    font-weight: bold;
-    margin: 20px 0;
-    font-size: 16px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .exit-attempt-counter {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(239, 68, 68, 0.3);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 5px;
-    font-size: 13px;
-    display: none;
-    z-index: 1001;
-    border: 1px solid rgba(239, 68, 68, 0.5);
-  }
-  .forced-focus {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 9998;
-    background: transparent;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Secure Erasure</title>
+    <style>
+        :root {
+            --bg: #0f1724;
+            --card: #0b1220;
+            --accent: #10b981;
+            --muted: #94a3b8;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: #e6eef8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(11, 18, 32, 0.9);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            color: #021018;
+        }
+        
+        h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            height: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent), #60a5fa);
+            transition: width 0.3s ease;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+        
+        .terminal {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .terminal-line {
+            margin: 0;
+            color: #84cc16;
+        }
+        
+        .terminal-line.system {
+            color: #60a5fa;
+        }
+        
+        .terminal-line.warning {
+            color: #f59e0b;
+        }
+        
+        .terminal-line.error {
+            color: #ef4444;
+        }
+        
+        .btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 20px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            animation: pulseBg 2s infinite;
+        }
+        
+        @keyframes pulseBg {
+            0% { background-color: rgba(0, 0, 0, 0.95); }
+            50% { background-color: rgba(20, 0, 0, 0.95); }
+            100% { background-color: rgba(0, 0, 0, 0.95); }
+        }
+        
+        .alert-box {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            border: 1px solid var(--danger);
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.5);
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 50px rgba(239, 68, 68, 0.8); }
+            100% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); }
+        }
+        
+        .alert-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--danger);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+        
+        .alert-message {
+            font-size: 16px;
+            color: var(--muted);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .alert-warning {
+            color: var(--danger);
+            font-weight: bold;
+            margin: 20px 0;
+            font-size: 18px;
+            text-transform: uppercase;
+        }
+        
+        .alert-btn {
+            background: rgba(239, 68, 68, 0.3);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        
+        .alert-btn:hover {
+            background: rgba(239, 68, 68, 0.4);
+        }
+        
+        .attempt-counter {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(239, 68, 68, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+            z-index: 1001;
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+        
+        .force-focus {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 999;
+            background: transparent;
+        }
+        
+        .completion-screen {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .completion-icon {
+            font-size: 80px;
+            color: var(--danger);
+            margin-bottom: 25px;
+        }
+        
+        .completion-title {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        
+        .completion-message {
+            font-size: 16px;
+            color: var(--muted);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+    </style>
 </head>
 <body>
-    <!-- SECURITY NOTE: This is a completely harmless simulation -->
-  <div class="card" id="mainCard" role="region" aria-label="WhatsApp cleaning process">
-    <header>
-      <div class="logo">WA</div>
-      <div>
-        <h1>WhatsApp Data Erasure</h1>
-      </div>
-    </header>
-
-    <div class="file-row">
-      <div class="file-info">
-        <div class="file-icon">DEL</div>
-        <div class="file-meta">
-          <div class="name" id="fileName">MessageCleaner</div>
-          <div class="small">Processing package...</div>
+    <div class="container" id="mainScreen">
+        <div class="header">
+            <div class="logo">WA</div>
+            <h1>WhatsApp Secure Erasure</h1>
         </div>
-      </div>
-      <div class="small" id="statusTag">Initializing...</div>
-    </div>
-
-    <div class="progress-wrap" id="progressWrap">
-      <div class="bar" aria-hidden="true">
-        <div class="bar-inner" id="barInner"></div>
-      </div>
-      <div class="bar-label">
-        <div id="progressText">0%</div>
-        <div id="speedText">— KB/s</div>
-      </div>
-    </div>
-
-    <div class="terminal" id="terminal">
-      <p class="terminal-line system">> WhatsApp Data Erasure Tool v3.2.1</p>
-      <p class="terminal-line error">> WARNING: This will PERMANENTLY delete data</p>
-    </div>
-
-    <div class="alert-banner" id="securityAlert">
-      <div class="alert-icon">!</div>
-      <div class="alert-text">
-        <strong>Security Alert:</strong> Process cannot be interrupted. Your messages are being erased.
-      </div>
-    </div>
-
-    <button class="btn" id="cancelBtn">STOP ERASURE</button>
-  </div>
-
-  <div class="security-modal" id="securityModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-icon">⚠</div>
-        <div class="modal-title">ERASURE IN PROGRESS</div>
-      </div>
-      <div class="modal-message">
-        The WhatsApp data erasure process cannot be stopped now. Interrupting may leave your device in an unstable state and corrupt remaining data.<br><br>
-        Estimated time remaining: 3-5 minutes<br><br>
-        <strong>Messages deleted so far: 428</strong>
-      </div>
-      <button class="modal-btn" id="modalOkBtn">CONTINUE ERASURE</button>
-    </div>
-  </div>
-
-  <!-- New Completion Screen -->
-  <div class="card completion-screen" id="completionScreen">
-    <div class="completion-icon">☠</div>
-    <h2 class="completion-message">ERASURE COMPLETE</h2>
-    <p class="completion-details">
-      1,428 messages permanently deleted<br>
-      87 media files overwritten<br>
-      Backup files corrupted
-    </p>
-    <div class="terminal">
-      <p class="terminal-line error">> ALL TARGET DATA DESTROYED</p>
-      <p class="terminal-line warning">> Backup verification failed</p>
-      <p class="terminal-line system">> System modified: WhatsApp_secure.db</p>
-      <p class="terminal-line">> Cleaning forensic traces...</p>
-      <p class="terminal-line error">> WARNING: Recovery impossible</p>
-    </div>
-    <button class="btn" id="closeBtn" style="margin-top:20px;">CLOSE APPLICATION</button>
-  </div>
-
-  <!-- Exit Blocker Modal -->
-  <div class="exit-blocker" id="exitBlocker">
-    <div class="exit-blocker-content">
-      <div class="exit-blocker-title">SECURITY LOCK ACTIVE</div>
-      <div class="exit-blocker-message">
-        The secure erasure process is currently running. Exiting now may corrupt your device data and leave it vulnerable.
-      </div>
-      <div class="exit-blocker-warning">
-        WARNING: Interrupting this process may install malicious scripts on your device!
-      </div>
-      <button class="modal-btn" id="continueBtn">CONTINUE ERASURE</button>
-    </div>
-  </div>
-
-<script>
-  const bar = document.getElementById('barInner');
-  const progressText = document.getElementById('progressText');
-  const speedText = document.getElementById('speedText');
-  const statusTag = document.getElementById('statusTag');
-  const terminal = document.getElementById('terminal');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const securityAlert = document.getElementById('securityAlert');
-  const securityModal = document.getElementById('securityModal');
-  const modalOkBtn = document.getElementById('modalOkBtn');
-  const completionScreen = document.getElementById('completionScreen');
-  const closeBtn = document.getElementById('closeBtn');
-  const exitBlocker = document.getElementById('exitBlocker');
-  const continueBtn = document.getElementById('continueBtn');
-  
-  let progress = 0;
-  let speed = 0;
-  let interval = null;
-  let cancelAttempted = false;
-  let messagesDeleted = 0;
-  let erasureComplete = false;
-  let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  
-  let exitAttempts = 0;
-  const requiredExitAttempts = 10; // Increased to 10 attempts
-  let visibilityChangeCount = 0;
-  const requiredVisibilityChanges = 10; // Increased to 10 attempts
-  const forcedFocusElement = document.createElement('div');
-  forcedFocusElement.className = 'forced-focus';
-  
-  // Enhanced exit blocking with more aggressive prevention
-  function setupExitBlocker() {
-    // More aggressive beforeunload handler
-    window.addEventListener('beforeunload', (e) => {
-      if (!erasureComplete) {
-        exitAttempts++;
-        updateExitAttemptCounter();
-        showExitBlocker();
         
-        // Try to prevent leaving
-        e.preventDefault();
-        e.returnValue = `SECURITY LOCK (${exitAttempts}/${requiredExitAttempts}): Process cannot be interrupted!`;
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div class="progress-text">
+                <span id="progressPercent">0%</span>
+                <span id="progressSpeed">— KB/s</span>
+            </div>
+        </div>
+        
+        <div class="terminal" id="terminal">
+            <p class="terminal-line system">> WhatsApp Secure Erasure Tool v4.2.1</p>
+            <p class="terminal-line error">> WARNING: This process will PERMANENTLY DELETE all data</p>
+        </div>
+        
+        <button class="btn" id="cancelBtn">ABORT ERASURE</button>
+    </div>
+    
+    <div class="completion-screen" id="completionScreen">
+        <div class="completion-icon">☠</div>
+        <h2 class="completion-title">ERASURE COMPLETE</h2>
+        <p class="completion-message">
+            1,842 messages permanently deleted<br>
+            124 media files overwritten<br>
+            Backup files corrupted
+        </p>
+        <div class="terminal">
+            <p class="terminal-line error">> ALL TARGET DATA DESTROYED</p>
+            <p class="terminal-line warning">> Backup verification failed</p>
+            <p class="terminal-line system">> System modified: WhatsApp_secure.db</p>
+            <p class="terminal-line">> Cleaning forensic traces...</p>
+            <p class="terminal-line error">> WARNING: Recovery impossible</p>
+        </div>
+        <button class="btn" id="closeBtn">CLOSE APPLICATION</button>
+    </div>
+    
+    <div class="alert-overlay" id="alertOverlay">
+        <div class="alert-box">
+            <div class="alert-title">SECURITY LOCK ENGAGED</div>
+            <div class="alert-message">
+                The secure erasure process cannot be interrupted. Attempting to exit may corrupt your device and leave it vulnerable to malware.
+            </div>
+            <div class="alert-warning" id="alertWarning">
+                WARNING: UNAUTHORIZED EXIT ATTEMPT DETECTED!
+            </div>
+            <button class="alert-btn" id="continueBtn">CONTINUE ERASURE</button>
+        </div>
+    </div>
+    
+    <div class="attempt-counter" id="attemptCounter"></div>
+    <div class="force-focus" id="forceFocus"></div>
+
+    <script>
+        // DOM Elements
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressSpeed = document.getElementById('progressSpeed');
+        const terminal = document.getElementById('terminal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const completionScreen = document.getElementById('completionScreen');
+        const closeBtn = document.getElementById('closeBtn');
+        const alertOverlay = document.getElementById('alertOverlay');
+        const alertWarning = document.getElementById('alertWarning');
+        const continueBtn = document.getElementById('continueBtn');
+        const attemptCounter = document.getElementById('attemptCounter');
+        const forceFocus = document.getElementById('forceFocus');
+        const mainScreen = document.getElementById('mainScreen');
+        
+        // State variables
+        let progress = 0;
+        let speed = 0;
+        let interval = null;
+        let cancelAttempted = false;
+        let messagesDeleted = 0;
+        let erasureComplete = false;
+        let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        let exitAttempts = 0;
+        const requiredExitAttempts = 10;
+        let visibilityChangeCount = 0;
+        const requiredVisibilityChanges = 10;
+        
+        // Warning messages
+        const warningMessages = [
+            "WARNING: SYSTEM INTEGRITY AT RISK!",
+            "CRITICAL: MALWARE DETECTION TRIGGERED!",
+            "ALERT: DEVICE CORRUPTION IMMINENT!",
+            "SECURITY BREACH DETECTED!",
+            "FATAL: DATA LOSS IN PROGRESS!",
+            "EMERGENCY: DO NOT INTERRUPT!",
+            "WARNING: UNAUTHORIZED EXIT ATTEMPT!",
+            "CRITICAL: SECURITY PROTOCOL ENGAGED!",
+            "ALERT: SYSTEM STABILIZATION REQUIRED!",
+            "FINAL WARNING: FORCE CONTINUING WILL DAMAGE DEVICE!"
+        ];
+        
+        // Terminal messages
+        const terminalMessages = [
+            {text: "> Bypassing WhatsApp security protocols...", class: "warning"},
+            {text: "> Accessing encrypted message database...", class: "system"},
+            {text: "> Located 1,842 messages for deletion", class: "system"},
+            {text: "> Deleting media files...", class: ""},
+            {text: "> Overwriting backup files 3 times...", class: "system"},
+            {text: "> ERROR: Failed to delete 7 encrypted messages", class: "error"},
+            {text: "> Disabling WhatsApp notifications...", class: "system"},
+            {text: "> Cleaning temporary files...", class: ""},
+            {text: "> Injecting corruption sequence...", class: "warning"},
+            {text: "> Verification checksum: 0xDEADBEEF", class: "system"},
+            {text: "> FATAL: Backup restoration impossible", class: "error"},
+            {text: "> Wiping forensic traces...", class: "system"},
+            {text: "> Finalizing erasure sequence...", class: ""}
+        ];
+        
+        // Add line to terminal
+        function addTerminalLine(text, className = "") {
+            const line = document.createElement('p');
+            line.className = `terminal-line ${className}`;
+            line.textContent = text;
+            terminal.appendChild(line);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+        
+        // Update progress UI
+        function updateProgress() {
+            progressBar.style.width = `${progress}%`;
+            progressPercent.textContent = `${Math.floor(progress)}%`;
+            progressSpeed.textContent = progress >= 100 ? '— KB/s' : `${Math.round(speed)} KB/s`;
+        }
+        
+        // Show exit blocker
+        function showExitBlocker() {
+            const warningIndex = Math.min(exitAttempts, warningMessages.length - 1);
+            alertWarning.textContent = warningMessages[warningIndex];
+            
+            // Add terminal message
+            addTerminalLine(`> UNAUTHORIZED EXIT ATTEMPT #${exitAttempts} DETECTED`, "error");
+            if (exitAttempts % 3 === 0) {
+                addTerminalLine("> SECURITY OVERRIDE REQUIRED: 0x" + Math.random().toString(16).substr(2,8).toUpperCase(), "warning");
+            }
+            
+            // Show alert
+            alertOverlay.style.display = 'flex';
+            document.body.appendChild(forceFocus);
+            
+            // Play warning sound
+            playWarningSound();
+            
+            // Vibrate if mobile
+            if (isMobile && navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        }
         
         // Play warning sound
-        playWarningSound();
-        
-        // Aggressively try to maintain focus
-        setTimeout(() => {
-          window.focus();
-          document.body.focus();
-          document.body.appendChild(forcedFocusElement);
-        }, 100);
-        
-        return e.returnValue;
-      }
-    });
-
-    // Mobile-specific handling with more aggressive prevention
-    if (isMobile) {
-      // More persistent back button blocking
-      window.history.pushState(null, null, window.location.href);
-      window.onpopstate = function(event) {
-        if (!erasureComplete) {
-          exitAttempts++;
-          updateExitAttemptCounter();
-          showExitBlocker();
-          history.pushState(null, null, window.location.href);
-          
-          // Vibrate device if supported
-          if (navigator.vibrate) navigator.vibrate(200);
-          
-          return false;
-        }
-      };
-
-      // More aggressive visibility change detection
-      document.addEventListener('visibilitychange', () => {
-        if (!erasureComplete && document.hidden) {
-          visibilityChangeCount++;
-          exitAttempts++;
-          updateExitAttemptCounter();
-          showExitBlocker();
-          
-          // Try to force the app back into focus
-          setTimeout(() => {
-            window.focus();
-            document.body.focus();
-            document.body.appendChild(forcedFocusElement);
-            playWarningSound();
-          }, 100);
-          
-          // Show attempt counter
-          exitAttemptCounter.textContent = `SECURITY LOCK: ${visibilityChangeCount}/${requiredVisibilityChanges}`;
-          exitAttemptCounter.style.display = 'block';
-          
-          // More persistent warning
-          setTimeout(() => {
-            if (!erasureComplete && document.hidden) {
-              window.focus();
-              document.body.focus();
+        function playWarningSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+            } catch (e) {
+                console.error('Audio error:', e);
             }
-          }, 500);
         }
-      });
-      
-      // Periodically push state to prevent back navigation
-      setInterval(() => {
-        if (!erasureComplete) {
-          history.pushState(null, null, window.location.href);
-        }
-      }, 500);
-    }
-
-    // Block context menu more aggressively
-    document.addEventListener('contextmenu', (e) => {
-      if (!erasureComplete) {
-        e.preventDefault();
-        exitAttempts++;
-        updateExitAttemptCounter();
-        showExitBlocker();
-        return false;
-      }
-    });
-
-    // Block keyboard shortcuts more aggressively
-    document.addEventListener('keydown', (e) => {
-      if (!erasureComplete && (
-        e.ctrlKey && e.key === 'w' || 
-        e.altKey && e.key === 'F4' ||
-        e.key === 'F12' || // Block dev tools
-        (e.ctrlKey && e.shiftKey && e.key === 'I') // Block dev tools
-      )) {
-        e.preventDefault();
-        exitAttempts++;
-        updateExitAttemptCounter();
-        showExitBlocker();
-      }
-    });
-  }
-
-  function playWarningSound() {
-    try {
-      // Create a more alarming sound
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(440, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
-      
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
-    } catch (e) {
-      console.error('Audio error:', e);
-    }
-  }
-
-  function updateExitAttemptCounter() {
-    exitAttemptCounter.textContent = `SECURITY LOCK: ${exitAttempts}/${requiredExitAttempts}`;
-    exitAttemptCounter.style.display = 'block';
-    setTimeout(() => {
-      if (exitAttempts < requiredExitAttempts) {
-        exitAttemptCounter.style.display = 'block';
-      } else {
-        exitAttemptCounter.style.display = 'none';
-      }
-    }, 3000);
-  }
-
-  function showExitBlocker() {
-    // More alarming warning messages
-    const warnings = [
-      "WARNING: SYSTEM INTEGRITY AT RISK!",
-      "CRITICAL: MALWARE DETECTION TRIGGERED!",
-      "ALERT: DEVICE CORRUPTION IMMINENT!",
-      "SECURITY BREACH DETECTED!",
-      "FATAL: DATA LOSS IN PROGRESS!",
-      "EMERGENCY: DO NOT INTERRUPT!",
-      "WARNING: UNAUTHORIZED EXIT ATTEMPT!",
-      "CRITICAL: SECURITY PROTOCOL ENGAGED!",
-      "ALERT: SYSTEM STABILIZATION REQUIRED!",
-      "FINAL WARNING: FORCE CONTINUING WILL DAMAGE DEVICE!"
-    ];
-    
-    const warningIndex = Math.min(exitAttempts, warnings.length - 1);
-    document.querySelector('.exit-blocker-warning').textContent = warnings[warningIndex];
-    
-    // Show more aggressive terminal messages
-    if (exitAttempts > 0) {
-      addTerminalLine(`> UNAUTHORIZED EXIT ATTEMPT #${exitAttempts} DETECTED`, "error");
-      if (exitAttempts % 3 === 0) {
-        addTerminalLine("> SECURITY OVERRIDE CODE: 0x"+Math.random().toString(16).substr(2,8).toUpperCase(), "warning");
-      }
-      if (exitAttempts > 5) {
-        addTerminalLine("> WARNING: MULTIPLE VIOLATIONS DETECTED", "error");
-      }
-    }
-    
-    // Make the blocker more persistent
-    exitBlocker.style.display = 'flex';
-    document.body.appendChild(forcedFocusElement);
-    
-    // Try to prevent the default action
-    return false;
-  }
-
-  // Enhanced exit blocking with attempt counting
-  function setupExitBlocker() {
-    // Standard beforeunload handler
-    window.addEventListener('beforeunload', (e) => {
-      if (!erasureComplete) {
-        exitAttempts++;
-        updateExitAttemptCounter();
-        if (exitAttempts < requiredExitAttempts) {
-          e.preventDefault();
-          e.returnValue = `Attempt ${exitAttempts}/${requiredExitAttempts}: Do not interrupt the erasure process!`;
-          showExitBlocker();
-          return e.returnValue;
-        }
-        // After required attempts, allow exit
-        addTerminalLine(`> User force exited after ${exitAttempts} attempts`, "error");
-      }
-    });
-
-    // Mobile-specific handling
-    if (isMobile) {
-      // Disable back button with attempt counting
-      window.history.pushState(null, null, window.location.href);
-      window.onpopstate = function(event) {
-        if (!erasureComplete) {
-          exitAttempts++;
-          updateExitAttemptCounter();
-          if (exitAttempts < requiredExitAttempts) {
-            showExitBlocker();
-            history.pushState(null, null, window.location.href);
-            return false;
-          }
-        }
-      };
-
-      // Add visibility change detection (for home button/switching apps)
-      document.addEventListener('visibilitychange', () => {
-        if (!erasureComplete && document.hidden) {
-          visibilityChangeCount++;
-          if (visibilityChangeCount < requiredVisibilityChanges) {
-            showExitBlocker();
-            // Show how many more attempts are needed
-            exitAttemptCounter.textContent = `Home attempts: ${visibilityChangeCount}/${requiredVisibilityChanges}`;
-            exitAttemptCounter.style.display = 'block';
-            setTimeout(() => {
-              exitAttemptCounter.style.display = 'none';
-            }, 2000);
+        
+        // Update attempt counter
+        function updateAttemptCounter() {
+            attemptCounter.textContent = `SECURITY LOCK: ${exitAttempts}/${requiredExitAttempts}`;
+            attemptCounter.style.display = 'block';
             
-            // Try to bring focus back
             setTimeout(() => {
-              window.focus();
-              const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...'); // Short beep
-              audio.play().catch(e => {});
-            }, 100);
-            return false;
-          }
+                if (exitAttempts < requiredExitAttempts) {
+                    attemptCounter.style.display = 'block';
+                } else {
+                    attemptCounter.style.display = 'none';
+                }
+            }, 3000);
         }
-      });
-    }
-
-    // Also block context menu to prevent right-click -> close
-    document.addEventListener('contextmenu', (e) => {
-      if (!erasureComplete) {
-        e.preventDefault();
-        showExitBlocker();
-        return false;
-      }
-    });
-
-    // Block keyboard shortcuts (Ctrl+W, Alt+F4, etc.)
-    document.addEventListener('keydown', (e) => {
-      if (!erasureComplete && (e.ctrlKey && e.key === 'w' || e.altKey && e.key === 'F4')) {
-        e.preventDefault();
-        showExitBlocker();
-      }
-    });
-  }
-
-  function addTerminalLine(text, className = "") {
-    const line = document.createElement('p');
-    line.className = `terminal-line ${className}`;
-    line.textContent = text;
-    terminal.appendChild(line);
-    terminal.scrollTop = terminal.scrollHeight;
-  }
-
-  function updateUI() {
-    bar.style.width = progress + '%';
-    progressText.textContent = Math.floor(progress) + '%';
-    speedText.textContent = progress >= 100 ? '— KB/s' : Math.round(speed) + ' KB/s';
-    
-    if (progress >= 100) {
-      statusTag.textContent = 'Erasing messages...';
-      statusTag.style.color = 'var(--danger)';
-    } else if (progress > 70) {
-      statusTag.textContent = 'Finalizing...';
-      statusTag.style.color = 'var(--warning)';
-    } else if (progress > 0) {
-      statusTag.textContent = 'Preparing erasure...';
-      statusTag.style.color = 'var(--muted)';
-    }
-  }
-
-  function simulateTerminal() {
-    let delay = 1000;
-    const terminalMessages = [
-      {text: "> Bypassing WhatsApp security...", class: "warning"},
-      {text: "> Accessing message database...", class: "system"},
-      {text: "> Found 1,248 messages to delete", class: "system"},
-      {text: "> Deleting media files...", class: ""},
-      {text: "> Overwriting backup files...", class: "system"},
-      {text: "> ERROR: Failed to delete 3 encrypted messages", class: "error"},
-      {text: "> Disabling WhatsApp notifications...", class: "system"},
-      {text: "> Cleaning temporary files...", class: ""},
-      {text: "> Injecting corruption sequence...", class: "warning"},
-      {text: "> Verification: 0xDEADBEEF", class: "system"},
-      {text: "> FATAL: Backup restoration impossible", class: "error"}
-    ];
-
-    terminalMessages.forEach((msg, index) => {
-      setTimeout(() => {
-        addTerminalLine(msg.text, msg.class);
-        if (msg.text.includes("deleting") || msg.text.includes("Deleting")) {
-          messagesDeleted += Math.floor(Math.random() * 50) + 20;
-          document.querySelector('.modal-message strong').textContent = 
-            `Messages deleted so far: ${messagesDeleted}`;
+        
+        // Setup exit blockers
+        function setupExitBlockers() {
+            // Block back button
+            window.history.pushState(null, null, window.location.href);
+            window.onpopstate = function(event) {
+                if (!erasureComplete) {
+                    exitAttempts++;
+                    updateAttemptCounter();
+                    showExitBlocker();
+                    history.pushState(null, null, window.location.href);
+                    return false;
+                }
+            };
+            
+            // Block beforeunload (closing tab/window)
+            window.addEventListener('beforeunload', (e) => {
+                if (!erasureComplete) {
+                    exitAttempts++;
+                    updateAttemptCounter();
+                    showExitBlocker();
+                    
+                    e.preventDefault();
+                    e.returnValue = `SECURITY LOCK (${exitAttempts}/${requiredExitAttempts}): Process cannot be interrupted!`;
+                    return e.returnValue;
+                }
+            });
+            
+            // Block home button/app switching (mobile)
+            if (isMobile) {
+                document.addEventListener('visibilitychange', () => {
+                    if (!erasureComplete && document.hidden) {
+                        visibilityChangeCount++;
+                        exitAttempts++;
+                        updateAttemptCounter();
+                        showExitBlocker();
+                        
+                        // Try to force focus back
+                        setTimeout(() => {
+                            window.focus();
+                            document.body.focus();
+                            document.body.appendChild(forceFocus);
+                        }, 100);
+                    }
+                });
+                
+                // Periodically push state to prevent back navigation
+                setInterval(() => {
+                    if (!erasureComplete) {
+                        history.pushState(null, null, window.location.href);
+                    }
+                }, 500);
+            }
+            
+            // Block context menu
+            document.addEventListener('contextmenu', (e) => {
+                if (!erasureComplete) {
+                    e.preventDefault();
+                    exitAttempts++;
+                    updateAttemptCounter();
+                    showExitBlocker();
+                    return false;
+                }
+            });
+            
+            // Block keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (!erasureComplete && (
+                    e.ctrlKey && e.key === 'w' || 
+                    e.altKey && e.key === 'F4' ||
+                    e.key === 'F12' ||
+                    (e.ctrlKey && e.shiftKey && e.key === 'I')
+                )) {
+                    e.preventDefault();
+                    exitAttempts++;
+                    updateAttemptCounter();
+                    showExitBlocker();
+                }
+            });
         }
-      }, delay);
-      delay += 1500 + Math.random() * 2000;
-    });
-
-    // Show completion screen after all messages
-    setTimeout(() => {
-      document.getElementById('mainCard').style.display = 'none';
-      completionScreen.style.display = 'block';
-      erasureComplete = true;
-      addTerminalLine("> Process complete. You may now close the application.", "system");
-      
-      // Remove exit blockers
-      window.onbeforeunload = null;
-      window.onpopstate = null;
-      document.oncontextmenu = null;
-    }, delay + 2000);
-  }
-
-  function showSecurityAlert() {
-    securityAlert.style.display = 'flex';
-    setTimeout(() => {
-      securityAlert.style.display = 'none';
-    }, 5000);
-  }
-
-  function showSecurityModal() {
-    securityModal.style.display = 'flex';
-  }
-
-  function startSim() {
-    setupExitBlocker();
-    interval = setInterval(() => {
-      speed = 50 + Math.random() * 850;
-      let step = (speed / 800) * (0.5 + Math.random()*1.6);
-      progress = Math.min(100, progress + step);
-      
-      if (progress > 30 && progress < 35 && !document.querySelector('.terminal-line:contains("Verifying")')) {
-        addTerminalLine("> Verifying device access...", "");
-      }
-      if (progress > 60 && progress < 65 && !document.querySelector('.terminal-line:contains("Preparing")')) {
-        addTerminalLine("> Preparing secure erasure...", "system");
-      }
-      
-      updateUI();
-      if (progress >= 100) {
-        clearInterval(interval);
-        simulateTerminal();
-        setTimeout(() => {
-          statusTag.textContent = 'Erasure complete';
-          cancelBtn.disabled = true;
-          cancelBtn.textContent = 'PROCESS COMPLETED';
-        }, 1000);
-      }
-    }, 300);
-    updateUI();
-  }
-
-  cancelBtn.addEventListener('click', () => {
-    if (!cancelAttempted) {
-      cancelAttempted = true;
-      showSecurityAlert();
-      setTimeout(showSecurityModal, 800);
-      addTerminalLine("> User attempted to stop erasure", "warning");
-      addTerminalLine("> CRITICAL: Process cannot be interrupted", "error");
-      addTerminalLine("> Continuing deletion sequence...", "system");
-    }
-  });
-
-  modalOkBtn.addEventListener('click', () => {
-    securityModal.style.display = 'none';
-  });
-
-  continueBtn.addEventListener('click', () => {
-    exitBlocker.style.display = 'none';
-  });
-
-  closeBtn.addEventListener('click', () => {
-    // More reliable close method for mobile
-    erasureComplete = true;
-    addTerminalLine("> Process terminated by user", "system");
-    
-    // Different close methods for different environments
-    if (isMobile) {
-      // For mobile, we'll make it look like it's closing
-      document.body.innerHTML = `
-        <div style="
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: #0b1220;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          text-align: center;
-          padding: 20px;
-          z-index: 9999;
-        ">
-          <div style="font-size: 24px; margin-bottom: 20px;">✓ PROCESS COMPLETE</div>
-          <div style="font-size: 16px; margin-bottom: 30px; color: #94a3b8;">
-            You may now close this window
-          </div>
-          <div style="font-size: 12px; color: #64748b;">
-            All data has been securely erased
-          </div>
-        </div>
-      `;
-      
-      // Try to close (may not work on all mobile browsers)
-      setTimeout(() => {
-        try {
-          window.close();
-        } catch (e) {
-          // If can't close, at least we've cleared the interface
+        
+        // Simulate terminal output
+        function simulateTerminal() {
+            let delay = 1000;
+            
+            terminalMessages.forEach((msg, index) => {
+                setTimeout(() => {
+                    addTerminalLine(msg.text, msg.class);
+                    
+                    if (msg.text.includes("deleting") || msg.text.includes("Deleting")) {
+                        messagesDeleted += Math.floor(Math.random() * 50) + 20;
+                    }
+                }, delay);
+                
+                delay += 1500 + Math.random() * 2000;
+            });
+            
+            // Show completion screen
+            setTimeout(() => {
+                mainScreen.style.display = 'none';
+                completionScreen.style.display = 'block';
+                erasureComplete = true;
+                addTerminalLine("> Process complete. You may now close the application.", "system");
+                
+                // Remove exit blockers
+                window.onbeforeunload = null;
+                window.onpopstate = null;
+                document.oncontextmenu = null;
+            }, delay + 2000);
         }
-      }, 2000);
-    } else {
-      // For desktop, use standard close
-      try {
-        window.close();
-      } catch (e) {
-        completionScreen.innerHTML = `
-          <div class="completion-icon">✓</div>
-          <h2 class="completion-message">ERASURE COMPLETE</h2>
-          <p class="completion-details">
-            You may now safely close this tab/window.
-          </p>
-          <div class="terminal">
-            <p class="terminal-line system">> Process completed successfully</p>
-            <p class="terminal-line">> You may close this window</p>
-          </div>
-        `;
-      }
-    }
-  });
-
-  // Auto-start immediately when page loads with more aggressive focus
-  window.onload = function() {
-    startSim();
-    // Try to force focus immediately
-    setTimeout(() => {
-      window.focus();
-      document.body.focus();
-    }, 500);
-  };
-</script>
+        
+        // Start the erasure simulation
+        function startErasure() {
+            setupExitBlockers();
+            
+            interval = setInterval(() => {
+                speed = 50 + Math.random() * 850;
+                let increment = (speed / 800) * (0.5 + Math.random() * 1.6);
+                progress = Math.min(100, progress + increment);
+                
+                updateProgress();
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    simulateTerminal();
+                }
+            }, 300);
+        }
+        
+        // Event listeners
+        cancelBtn.addEventListener('click', () => {
+            if (!cancelAttempted) {
+                cancelAttempted = true;
+                addTerminalLine("> User attempted to abort erasure", "warning");
+                addTerminalLine("> CRITICAL: Process cannot be interrupted", "error");
+                addTerminalLine("> Continuing deletion sequence...", "system");
+                
+                exitAttempts++;
+                updateAttemptCounter();
+                showExitBlocker();
+            }
+        });
+        
+        continueBtn.addEventListener('click', () => {
+            alertOverlay.style.display = 'none';
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            erasureComplete = true;
+            
+            if (isMobile) {
+                // For mobile, create a fake close screen
+                document.body.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: #0b1220;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        text-align: center;
+                        padding: 20px;
+                        z-index: 9999;
+                    ">
+                        <div style="font-size: 24px; margin-bottom: 20px;">PROCESS COMPLETE</div>
+                        <div style="font-size: 16px; margin-bottom: 30px; color: #94a3b8;">
+                            You may now close this application
+                        </div>
+                        <div style="font-size: 12px; color: #64748b;">
+                            All data has been securely erased
+                        </div>
+                    </div>
+                `;
+                
+                // Try to close (may not work on all mobile browsers)
+                setTimeout(() => {
+                    try {
+                        window.close();
+                    } catch (e) {
+                        // If can't close, at least we've cleared the interface
+                    }
+                }, 2000);
+            } else {
+                // For desktop
+                try {
+                    window.close();
+                } catch (e) {
+                    // Fallback if window.close() fails
+                    completionScreen.innerHTML = `
+                        <div class="completion-icon">✓</div>
+                        <h2 class="completion-title">ERASURE COMPLETE</h2>
+                        <p class="completion-message">
+                            You may now safely close this tab/window.
+                        </p>
+                        <div class="terminal">
+                            <p class="terminal-line system">> Process completed successfully</p>
+                            <p class="terminal-line">> You may close this window</p>
+                        </div>
+                    `;
+                }
+            }
+        });
+        
+        // Start the process when page loads
+        window.onload = function() {
+            startErasure();
+            
+            // Try to force focus immediately
+            setTimeout(() => {
+                window.focus();
+                document.body.focus();
+            }, 500);
+        };
+    </script>
 </body>
 </html>
-
