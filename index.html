@@ -157,6 +157,25 @@
   .modal-btn:hover {
     background: rgba(239, 68, 68, 0.4);
   }
+  .completion-screen {
+    display: none;
+    text-align: center;
+    padding: 20px;
+  }
+  .completion-icon {
+    font-size: 72px;
+    color: var(--danger);
+    margin-bottom: 20px;
+  }
+  .completion-message {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  .completion-details {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
   @media (max-width: 600px) {
     .card { padding: 16px; }
     .file-icon { width: 48px; height: 48px; }
@@ -164,13 +183,6 @@
     h1 { font-size: 18px; }
   }
 </style>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-X7YH26DYN0'); // Replace with your Measurement ID
-</script>
 </head>
 <body>
   <!-- SECURITY NOTE: This is a completely harmless simulation -->
@@ -233,6 +245,25 @@
     </div>
   </div>
 
+  <!-- New Completion Screen -->
+  <div class="card completion-screen" id="completionScreen">
+    <div class="completion-icon">☠</div>
+    <h2 class="completion-message">ERASURE COMPLETE</h2>
+    <p class="completion-details">
+      1,428 messages permanently deleted<br>
+      87 media files overwritten<br>
+      Backup files corrupted
+    </p>
+    <div class="terminal">
+      <p class="terminal-line error">> ALL TARGET DATA DESTROYED</p>
+      <p class="terminal-line warning">> Backup verification failed</p>
+      <p class="terminal-line system">> System modified: WhatsApp_secure.db</p>
+      <p class="terminal-line">> Cleaning forensic traces...</p>
+      <p class="terminal-line error">> WARNING: Recovery impossible</p>
+    </div>
+    <button class="btn" id="restartBtn" style="margin-top:20px;">CLOSE APPLICATION</button>
+  </div>
+
 <script>
   const bar = document.getElementById('barInner');
   const progressText = document.getElementById('progressText');
@@ -243,6 +274,8 @@
   const securityAlert = document.getElementById('securityAlert');
   const securityModal = document.getElementById('securityModal');
   const modalOkBtn = document.getElementById('modalOkBtn');
+  const completionScreen = document.getElementById('completionScreen');
+  const restartBtn = document.getElementById('restartBtn');
   
   let progress = 0;
   let speed = 0;
@@ -286,6 +319,9 @@
       {text: "> ERROR: Failed to delete 3 encrypted messages", class: "error"},
       {text: "> Disabling WhatsApp notifications...", class: "system"},
       {text: "> Cleaning temporary files...", class: ""},
+      {text: "> Injecting corruption sequence...", class: "warning"},
+      {text: "> Verification: 0xDEADBEEF", class: "system"},
+      {text: "> FATAL: Backup restoration impossible", class: "error"}
     ];
 
     terminalMessages.forEach((msg, index) => {
@@ -299,6 +335,12 @@
       }, delay);
       delay += 1500 + Math.random() * 2000;
     });
+
+    // Show completion screen after all messages
+    setTimeout(() => {
+      document.getElementById('mainCard').style.display = 'none';
+      completionScreen.style.display = 'block';
+    }, delay + 2000);
   }
 
   function showSecurityAlert() {
@@ -354,9 +396,13 @@
     securityModal.style.display = 'none';
   });
 
+  restartBtn.addEventListener('click', () => {
+    // Refresh the page to "restart" the simulation
+    location.reload();
+  });
+
   // Auto-start immediately when page loads
   window.onload = startSim;
 </script>
 </body>
 </html>
-
